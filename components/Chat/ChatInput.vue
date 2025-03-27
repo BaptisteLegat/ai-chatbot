@@ -42,7 +42,7 @@
                 <div class="relative">
                     <button
                         type="button"
-                        @click="$emit('toggle-tag', selectedTags.length ? [] : ['Créatif'])"
+                        @click="$emit('toggle-tag', 'Créatif')"
                         :class="[
                             'flex items-center justify-center rounded-xl px-3 py-3 transition-all',
                             isDarkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',

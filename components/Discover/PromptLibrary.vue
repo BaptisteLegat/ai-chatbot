@@ -11,7 +11,7 @@
     <div class="grid gap-4 sm:grid-cols-2">
         <div
             v-for="prompt in promptLibrary"
-            v-show="selectedTags.length === 0 || prompt.tags.some((tag) => selectedTags.includes(tag))"
+            v-show="selectedTags.length === 0 || selectedTags.every((tag) => prompt.tags.includes(tag))"
             :class="['rounded-lg p-4 transition-all hover:shadow-md', isDarkMode ? 'bg-gray-700' : 'bg-gray-50']"
         >
             <div class="mb-1 flex items-center justify-between">

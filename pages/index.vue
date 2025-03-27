@@ -13,6 +13,7 @@
             model: 'system',
         },
     ]);
+
     const loading = ref(false);
     const message = ref('');
     const activeModel = ref(null);
@@ -59,11 +60,11 @@
     const storyTitle = ref('');
 
     const availableModels = [
-        { id: 'meta/llama-3.1-8b-instruct', name: 'LLaMA 3 (9B)', provider: 'nvidia' },
-        { id: 'mistralai/mistral-7b-instruct-v0.3', name: 'Mistral 7B', provider: 'nvidia' },
+        { id: 'meta/llama-3.1-8b-instruct', name: 'LLaMA 3.1 (9B)', provider: 'nvidia' },
+        { id: 'mistralai/mistral-7b-instruct-v0.3', name: 'Mistral 7B (V0.3)', provider: 'nvidia' },
         { id: 'nvidia/nemotron-mini-4b-instruct', name: 'Nvidia Nemotron Mini', provider: 'nvidia' },
-        { id: 'huggingface-tiny-stories', name: 'TinyStories', provider: 'Hugging Face' },
-        { id: 'huggingface-gpt-neo', name: 'GPT-Neo', provider: 'Hugging Face' },
+        { id: 'roneneldan/TinyStories-33M', name: 'TinyStories', provider: 'hugging_face' },
+        { id: 'microsoft/Phi-3.5-MoE-instruct', name: 'Phi-3.5', provider: 'hugging_face' },
     ];
 
     const availableTags = ref(['Créatif', 'Code', 'Histoire', 'Science', 'Éducatif', 'Humour', 'Poésie', 'Informatique']);
@@ -93,8 +94,8 @@
 
             return response.choices?.[0]?.message?.content || "❌ Pas de réponse de l'IA.";
         } catch (error) {
-            console.error('Erreur API NVIDIA :', error);
-            return "❌ Une erreur est survenue avec l'API NVIDIA.";
+            console.error('Erreur API :', error);
+            return "❌ Une erreur est survenue avec l'API.";
         }
     };
 
@@ -132,7 +133,6 @@
                     }
                 );
             } else {
-                // Single model response
                 const response = await generateResponse(activeModel.value, messages.value);
                 messages.value.push({
                     role: 'AI',
@@ -269,11 +269,10 @@
     };
 
     const toggleTag = (tag) => {
-        const index = selectedTags.value.indexOf(tag);
-        if (index === -1) {
-            selectedTags.value.push(tag);
+        if (selectedTags.value.includes(tag)) {
+            selectedTags.value = selectedTags.value.filter((t) => t !== tag);
         } else {
-            selectedTags.value.splice(index, 1);
+            selectedTags.value = [...selectedTags.value, tag];
         }
     };
 
@@ -289,9 +288,7 @@
         <div class="px-4 py-8">
             <div class="mx-auto max-w-5xl">
                 <ChatHeader :isDarkMode="isDarkMode" :duelMode="duelMode" @toggle-dark-mode="toggleDarkMode" @toggle-duel-mode="toggleDuelMode" />
-
                 <ViewTabs :currentView="currentView" :isDarkMode="isDarkMode" @change-view="changeView" />
-
                 <div :class="['overflow-hidden rounded-xl shadow-xl', isDarkMode ? 'bg-gray-800' : 'bg-white']">
                     <ChatView
                         v-if="currentView === 'chat'"
@@ -311,7 +308,6 @@
                         @toggle-tag="toggleTag"
                         @update:message="(val) => (message = val)"
                     />
-
                     <DiscoverView
                         v-if="currentView === 'discover'"
                         :promptLibrary="promptLibrary"
@@ -322,7 +318,6 @@
                         @toggle-tag="toggleTag"
                         @like-prompt="likePrompt"
                     />
-
                     <StoryView
                         v-if="currentView === 'story'"
                         :storyTitle="storyTitle"
