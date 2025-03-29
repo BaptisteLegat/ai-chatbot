@@ -2,18 +2,57 @@
     import StoryEditor from './StoryEditor.vue';
     import StoryControls from './StoryControls.vue';
     import HallOfFame from './HallOfFame.vue';
+    import { ref, watch } from 'vue';
 
-    defineProps({
+    const props = defineProps({
         storyTitle: String,
         storyContent: String,
         message: String,
+        messages: Array,
         activeModel: String,
         loading: Boolean,
         isDarkMode: Boolean,
         availableModels: Array,
     });
 
-    defineEmits(['export-story', 'select-model', 'send-prompt', 'update:story-title', 'update:story-content', 'update:message']);
+    const emit = defineEmits(['export-story', 'select-model', 'send-prompt', 'update:story-title', 'update:story-content', 'update:message']);
+
+    const localMessage = ref(props.message || '');
+
+    watch(localMessage, (newVal) => {
+        emit('update:message', newVal);
+    });
+
+    watch(
+        () => props.activeModel,
+        (newModel) => {
+            if (newModel && props.messages && props.messages.length > 0) {
+                const lastMessage = props.messages[props.messages.length - 1];
+                if (lastMessage.role === 'AI' && lastMessage.model === props.activeModel) {
+                    emit('update:story-content', props.storyContent + '\n\n' + lastMessage.message);
+                }
+            }
+        }
+    );
+
+    const sendPrompt = () => {
+        if (props.activeModel === 'roneneldan/TinyStories-33M') {
+            emit('update:message', localMessage.value);
+        }
+        emit('send-prompt');
+    };
+
+    watch(
+        () => props.activeModel,
+        (newModel) => {
+            if (newModel && props.messages && props.messages.length > 0) {
+                const lastMessage = props.messages[props.messages.length - 1];
+                if (lastMessage.role === 'AI' && lastMessage.model === props.activeModel) {
+                    emit('update:story-content', props.storyContent + '\n\n' + lastMessage.message);
+                }
+            }
+        }
+    );
 </script>
 <template>
     <div class="p-4">
@@ -22,7 +61,7 @@
             @export-story="$emit('export-story')"
             @new-story="
                 $emit('update:story-content', '');
-                $emit('update:story-title', 'Mon histoire');
+                $emit('update:story-title', 'My Story');
             "
         />
         <StoryEditor
@@ -33,10 +72,11 @@
             @update:story-content="$emit('update:story-content', $event)"
         />
         <div :class="['border-t pt-4', isDarkMode ? 'border-gray-700' : 'border-gray-200']">
-            <h3 :class="['mb-2 text-sm font-medium', isDarkMode ? 'text-gray-300' : 'text-gray-700']">Continuer l'histoire avec le modèle...</h3>
+            <h3 :class="['mb-2 text-sm font-medium', isDarkMode ? 'text-gray-300' : 'text-gray-700']">Continuer l'histoire avec le modèle</h3>
             <div class="mb-4 flex flex-wrap gap-2">
                 <button
-                    v-for="model in availableModels.filter((m) => m.id === 'tiny-stories' || m.id === 'meta/llama-3.1-8b-instruct')"
+                    v-for="model in availableModels.filter((m) => m.id === 'roneneldan/TinyStories-33M')"
+                    :key="model.id"
                     @click="$emit('select-model', model.id)"
                     class="flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all"
                     :class="[
@@ -55,8 +95,7 @@
             </div>
             <div class="flex gap-2">
                 <input
-                    :value="message"
-                    @input="$emit('update:message', $event.target.value)"
+                    v-model="localMessage"
                     type="text"
                     :class="[
                         'flex-1 rounded-xl border px-4 py-3 transition-all focus:border-transparent focus:outline-none focus:ring-2',
@@ -66,13 +105,13 @@
                     :disabled="!activeModel"
                 />
                 <button
-                    @click="$emit('send-prompt')"
+                    @click="sendPrompt"
                     :class="[
                         'flex items-center justify-center rounded-xl px-5 py-3 text-white transition-all',
                         isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700',
-                        !message || !activeModel || loading ? 'cursor-not-allowed opacity-50' : '',
+                        !localMessage || !activeModel || loading ? 'cursor-not-allowed opacity-50' : '',
                     ]"
-                    :disabled="!message || !activeModel || loading"
+                    :disabled="!localMessage || !activeModel || loading"
                 >
                     <span v-if="!loading">Continuer</span>
                     <svg v-else class="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -85,6 +124,9 @@
                     </svg>
                 </button>
             </div>
+            <p v-if="activeModel === 'roneneldan/TinyStories-33M'" class="mt-2 text-xs text-gray-500">
+                * Ce modèle est en anglais, veuillez écrire votre histoire en anglais pour de meilleurs résultats.
+            </p>
         </div>
         <HallOfFame :isDarkMode="isDarkMode" />
         <div :class="['mt-4 text-center text-xs', isDarkMode ? 'text-gray-500' : 'text-gray-400']">

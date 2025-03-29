@@ -34,7 +34,7 @@
                         ? 'border-gray-600 bg-gray-800 text-white focus:border-blue-500 focus:ring-blue-500'
                         : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
                 ]"
-                placeholder="Il était une fois..."
+                placeholder="Once upon a time..."
             ></textarea>
         </div>
     </div>

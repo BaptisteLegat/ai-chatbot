@@ -6,13 +6,15 @@
     import DiscoverView from '@/components/Discover/DiscoverView.vue';
     import StoryView from '@/components/Story/StoryView.vue';
 
-    const messages = ref([
+    const chatMessages = ref([
         {
             role: 'AI',
             message: 'Salut ! Je suis votre assistant IA. Sélectionnez un modèle pour commencer.',
             model: 'system',
         },
     ]);
+
+    const storyMessages = ref([]);
 
     const loading = ref(false);
     const message = ref('');
@@ -104,11 +106,20 @@
 
         loading.value = true;
 
-        messages.value.push({
-            role: 'user',
-            message: message.value,
-            model: null,
-        });
+        // Ajout du message utilisateur dans la vue appropriée
+        if (currentView.value === 'story') {
+            storyMessages.value.push({
+                role: 'user',
+                message: message.value,
+                model: null,
+            });
+        } else {
+            chatMessages.value.push({
+                role: 'user',
+                message: message.value,
+                model: null,
+            });
+        }
 
         scrollToEnd();
 
@@ -116,11 +127,12 @@
             if (duelMode.value) {
                 const [model1, model2] = [activeModel.value, secondaryModel.value];
                 const [response1, response2] = await Promise.all([
-                    generateResponse(model1, messages.value),
-                    generateResponse(model2, messages.value),
+                    generateResponse(model1, currentView.value === 'story' ? storyMessages.value : chatMessages.value),
+                    generateResponse(model2, currentView.value === 'story' ? storyMessages.value : chatMessages.value),
                 ]);
 
-                messages.value.push(
+                const targetMessages = currentView.value === 'story' ? storyMessages : chatMessages;
+                targetMessages.value.push(
                     {
                         role: 'AI',
                         message: response1,
@@ -133,19 +145,30 @@
                     }
                 );
             } else {
-                const response = await generateResponse(activeModel.value, messages.value);
-                messages.value.push({
-                    role: 'AI',
-                    message: response,
-                    model: activeModel.value,
-                });
+                const response = await generateResponse(activeModel.value, currentView.value === 'story' ? storyMessages.value : chatMessages.value);
+
+                if (currentView.value === 'story') {
+                    storyMessages.value.push({
+                        role: 'AI',
+                        message: response,
+                        model: activeModel.value,
+                    });
+                    storyContent.value += '\n\n' + response;
+                } else {
+                    chatMessages.value.push({
+                        role: 'AI',
+                        message: response,
+                        model: activeModel.value,
+                    });
+                }
             }
 
             scrollToEnd();
             message.value = '';
         } catch (error) {
             console.error('Error:', error);
-            messages.value.push({
+            const targetMessages = currentView.value === 'story' ? storyMessages : chatMessages;
+            targetMessages.value.push({
                 role: 'AI',
                 message: "Désolé, une erreur s'est produite. Veuillez réessayer.",
                 model: 'system',
@@ -167,12 +190,13 @@
         } else {
             activeModel.value = modelId;
             if (!duelMode.value) {
-                const lastMessage = messages.value[messages.value.length - 1];
+                const targetMessages = currentView.value === 'story' ? storyMessages : chatMessages;
+                const lastMessage = targetMessages.value[targetMessages.value.length - 1];
                 if (
                     !lastMessage ||
                     lastMessage.message !== `Modèle ${availableModels.find((m) => m.id === modelId).name} sélectionné. Posez-moi une question !`
                 ) {
-                    messages.value.push({
+                    targetMessages.value.push({
                         role: 'AI',
                         message: `Modèle ${availableModels.find((m) => m.id === modelId).name} sélectionné. Posez-moi une question !`,
                         model: 'system',
@@ -183,11 +207,12 @@
         }
 
         if (duelMode.value && activeModel.value && secondaryModel.value) {
-            const lastMessage = messages.value[messages.value.length - 1];
+            const targetMessages = currentView.value === 'story' ? storyMessages : chatMessages;
+            const lastMessage = targetMessages.value[targetMessages.value.length - 1];
             const expectedMessage = `Duel configuré : ${availableModels.find((m) => m.id === activeModel.value).name} vs ${availableModels.find((m) => m.id === secondaryModel.value).name}. Entrez votre prompt pour voir les deux réponses !`;
 
             if (!lastMessage || lastMessage.message !== expectedMessage) {
-                messages.value.push({
+                targetMessages.value.push({
                     role: 'AI',
                     message: expectedMessage,
                     model: 'system',
@@ -202,8 +227,10 @@
         activeModel.value = null;
         secondaryModel.value = null;
 
+        const targetMessages = currentView.value === 'story' ? storyMessages : chatMessages;
+
         if (duelMode.value) {
-            messages.value = [
+            targetMessages.value = [
                 {
                     role: 'AI',
                     message: 'Mode Duel activé ! Sélectionnez deux modèles à comparer.',
@@ -211,7 +238,7 @@
                 },
             ];
         } else {
-            messages.value = [
+            targetMessages.value = [
                 {
                     role: 'AI',
                     message: 'Mode Duel désactivé. Sélectionnez un modèle pour continuer.',
@@ -230,7 +257,7 @@
         if (view === 'story') {
             storyMode.value = true;
             if (!storyTitle.value) storyTitle.value = 'Mon histoire';
-            if (!storyContent.value) storyContent.value = 'Il était une fois...';
+            if (!storyContent.value) storyContent.value = 'Once upon a time...';
         } else {
             storyMode.value = false;
         }
@@ -292,7 +319,7 @@
                 <div :class="['overflow-hidden rounded-xl shadow-xl', isDarkMode ? 'bg-gray-800' : 'bg-white']">
                     <ChatView
                         v-if="currentView === 'chat'"
-                        :messages="messages"
+                        :messages="chatMessages"
                         :loading="loading"
                         :message="message"
                         :activeModel="activeModel"
@@ -327,6 +354,7 @@
                         :loading="loading"
                         :isDarkMode="isDarkMode"
                         :availableModels="availableModels"
+                        :messages="storyMessages"
                         @export-story="exportStory"
                         @select-model="selectModel"
                         @send-prompt="sendPrompt"
