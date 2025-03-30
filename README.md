@@ -1,5 +1,7 @@
 # AI Chatbot
 
+[Lien du site](https://ai-chatbot-flax-alpha.vercel.app/)
+
 ## Ce qui a été implémenté
 
 ### Fonctionnalités principales
