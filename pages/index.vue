@@ -106,7 +106,6 @@
 
         loading.value = true;
 
-        // Ajout du message utilisateur dans la vue appropriée
         if (currentView.value === 'story') {
             storyMessages.value.push({
                 role: 'user',
