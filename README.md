@@ -1,6 +1,6 @@
 # AI Chatbot
 
-[Lien du site](https://ai-chatbot-flax-alpha.vercel.app/)
+[Lien du site](https://ai-chatbot-pi-roan.vercel.app/)
 
 ## Ce qui a été implémenté
 
